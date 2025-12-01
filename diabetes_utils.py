@@ -1,5 +1,12 @@
 import pandas as pd
 import numpy as np
+from sklearn.metrics import (
+    roc_curve, auc,
+    precision_recall_curve, average_precision_score,
+    confusion_matrix, ConfusionMatrixDisplay,
+)
+import matplotlib.pyplot as plt
+import os
 
 def clean_diabetes_data(df):
     """
@@ -77,3 +84,51 @@ def clean_diabetes_data(df):
         df_clean["readmit_30d"] = (df_clean["readmitted"] == "<30").astype(int)
 
     return df_clean
+
+def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
+    """
+    Make ROC, PR, and confusion matrix plots for one model
+    and save them under figures/.
+    """
+    os.makedirs("figures", exist_ok=True)
+
+    # Binary predictions at chosen threshold
+    y_pred = (y_prob >= threshold).astype(int)
+
+    #ROC curve 
+    fpr, tpr, _ = roc_curve(y_test, y_prob)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure()
+    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
+    plt.plot([0, 1], [0, 1], "k--")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"{model_name} – ROC curve")
+    plt.legend(loc="lower right")
+    plt.tight_layout()
+    plt.savefig(f"figures/roc_{model_name}.png", dpi=300)
+    plt.close()
+
+    #Precision–Recall curve
+    precision, recall, _ = precision_recall_curve(y_test, y_prob)
+    ap = average_precision_score(y_test, y_prob)
+
+    plt.figure()
+    plt.plot(recall, precision, label=f"AP = {ap:.3f}")
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title(f"{model_name} – Precision–Recall curve")
+    plt.legend(loc="lower left")
+    plt.tight_layout()
+    plt.savefig(f"figures/pr_{model_name}.png", dpi=300)
+    plt.close()
+
+    #Confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+    disp = ConfusionMatrixDisplay(cm, display_labels=["No 30d readmit", "30d readmit"])
+    disp.plot(values_format="d")
+    plt.title(f"{model_name} – Confusion matrix (thr={threshold})")
+    plt.tight_layout()
+    plt.savefig(f"figures/cm_{model_name}.png", dpi=300)
+    plt.close()
