@@ -92,6 +92,13 @@ def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
     """
     os.makedirs("figures", exist_ok=True)
 
+    FONT_LABEL = 14
+    FONT_TITLE = 16
+    FONT_TICKS = 12
+    FONT_LEGEND = 12
+    LINE_WIDTH_MAIN = 2.5
+    LINE_WIDTH_BASE = 1.8
+
     # Binary predictions at chosen threshold
     y_pred = (y_prob >= threshold).astype(int)
 
@@ -100,12 +107,14 @@ def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
     roc_auc = auc(fpr, tpr)
 
     plt.figure()
-    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
-    plt.plot([0, 1], [0, 1], "k--")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title(f"{model_name} – ROC curve")
-    plt.legend(loc="lower right")
+    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}", linewidth=LINE_WIDTH_MAIN)
+    plt.plot([0, 1], [0, 1], "k--", linewidth=LINE_WIDTH_BASE)
+    plt.xlabel("False Positive Rate", fontsize=FONT_LABEL)
+    plt.ylabel("True Positive Rate", fontsize=FONT_LABEL)
+    plt.title(f"{model_name} – ROC curve", fontsize=FONT_TITLE)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    plt.legend(loc="lower right", fontsize=FONT_LEGEND)
     plt.tight_layout()
     plt.savefig(f"figures/roc_{model_name}.png", dpi=300)
     plt.close()
@@ -115,11 +124,13 @@ def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
     ap = average_precision_score(y_test, y_prob)
 
     plt.figure()
-    plt.plot(recall, precision, label=f"AP = {ap:.3f}")
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.title(f"{model_name} – Precision–Recall curve")
-    plt.legend(loc="lower left")
+    plt.plot(recall, precision, label=f"AP = {ap:.3f}", linewidth=LINE_WIDTH_MAIN)
+    plt.xlabel("Recall", fontsize=FONT_LABEL)
+    plt.ylabel("Precision", fontsize=FONT_LABEL)
+    plt.title(f"{model_name} – Precision–Recall curve", fontsize=FONT_TITLE)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    plt.legend(loc="lower left", fontsize=FONT_LEGEND)
     plt.tight_layout()
     plt.savefig(f"figures/pr_{model_name}.png", dpi=300)
     plt.close()
@@ -128,7 +139,14 @@ def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
     cm = confusion_matrix(y_test, y_pred)
     disp = ConfusionMatrixDisplay(cm, display_labels=["No 30d readmit", "30d readmit"])
     disp.plot(values_format="d")
-    plt.title(f"{model_name} – Confusion matrix (thr={threshold})")
+    plt.title(f"{model_name} – Confusion matrix (thr={threshold})", fontsize=FONT_TITLE)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    
+    # Increase font size of the cell values
+    for text in plt.gca().texts:
+        text.set_fontsize(14)
+        
     plt.tight_layout()
     plt.savefig(f"figures/cm_{model_name}.png", dpi=300)
     plt.close()
