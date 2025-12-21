@@ -94,10 +94,10 @@ def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
 
     FONT_LABEL = 14
     FONT_TITLE = 16
-    FONT_TICKS = 12
-    FONT_LEGEND = 12
-    LINE_WIDTH_MAIN = 2.5
-    LINE_WIDTH_BASE = 1.8
+    FONT_TICKS = 13
+    FONT_LEGEND = 13
+    LINE_WIDTH_MAIN = 4
+    LINE_WIDTH_BASE = 3
 
     # Binary predictions at chosen threshold
     y_pred = (y_prob >= threshold).astype(int)
@@ -107,8 +107,8 @@ def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
     roc_auc = auc(fpr, tpr)
 
     plt.figure()
-    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}", linewidth=LINE_WIDTH_MAIN)
-    plt.plot([0, 1], [0, 1], "k--", linewidth=LINE_WIDTH_BASE)
+    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}", lw=LINE_WIDTH_MAIN)
+    plt.plot([0, 1], [0, 1], "k--", lw=LINE_WIDTH_BASE)
     plt.xlabel("False Positive Rate", fontsize=FONT_LABEL)
     plt.ylabel("True Positive Rate", fontsize=FONT_LABEL)
     plt.title(f"{model_name} – ROC curve", fontsize=FONT_TITLE)

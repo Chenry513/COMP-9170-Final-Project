@@ -1,31 +1,13 @@
-import sys
-!{sys.executable} -m pip install ucimlrepo
-
 import pandas as pd
 import numpy as np
+from sklearn.metrics import (
+    roc_curve, auc,
+    precision_recall_curve, average_precision_score,
+    confusion_matrix, ConfusionMatrixDisplay,
+)
 import matplotlib.pyplot as plt
-import seaborn as sns
-from ucimlrepo import fetch_ucirepo
+import os
 
-# Fetch dataset from UCI ML Repository (ID 296)
-diabetes_data = fetch_ucirepo(id=296)
-X = diabetes_data.data.features
-y = diabetes_data.data.targets
-
-# Make sure target column has a nice name
-if "readmitted" not in y.columns:
-    y.columns = ["readmitted"]
-
-# Combine into a single DataFrame
-df = pd.concat([X, y], axis=1)
-
-print("Shape:", df.shape)
-print(df.head())
-print(df.columns)
-print(y.head())
-
-
-# Cleaning pipeline function
 def clean_diabetes_data(df):
     """
     Clean and prepare the Diabetes 130-US dataset for modelling.
@@ -42,16 +24,9 @@ def clean_diabetes_data(df):
       instead of using every raw code:
         Circulatory, Respiratory, Digestive, Diabetes, Injury, Musculoskeletal,
         Genitourinary, Neoplasms, Other, Unknown.
-      This reduces the number of categories while keeping the main clinical signal.
     - Create a binary 30-day readmission label readmit_30d:
         1 if readmitted == "<30"
         0 if readmitted is "NO" or ">30"
-
-    Returns
-    -------
-    df_clean : pandas.DataFrame
-        Cleaned dataframe with high-missing columns removed, race handled,
-        diagnosis groups added, and readmit_30d defined.
     """
     df_clean = df.copy()
 
@@ -72,15 +47,10 @@ def clean_diabetes_data(df):
     diag_cols = ["diag_1", "diag_2", "diag_3"]
 
     def map_diag_to_group(code):
-        """
-        Map a diagnosis code (like '250', '414') into a broad group
-        such as 'Circulatory', 'Respiratory', 'Diabetes', etc.
-        Missing values become 'Unknown'.
-        """
+        """Map a diagnosis code into a broad group."""
         if pd.isna(code):
             return "Unknown"
 
-        # codes can be like '250', '414', 'V45', 'E870', etc.
         try:
             num = float(code)
         except ValueError:
@@ -105,21 +75,78 @@ def clean_diabetes_data(df):
         else:
             return "Other"
 
-    # apply mapping to each diag column and create *_group versions
     for col in diag_cols:
         if col in df_clean.columns:
             df_clean[col + "_group"] = df_clean[col].apply(map_diag_to_group)
 
-    # (optional) drop the raw diag codes if you only want the grouped ones
-    # df_clean = df_clean.drop(columns=[c for c in diag_cols if c in df_clean.columns])
-
     # 4. Create binary 30-day readmission label
     if "readmitted" in df_clean.columns:
-        # 1 = readmitted within 30 days, 0 = NO or >30
         df_clean["readmit_30d"] = (df_clean["readmitted"] == "<30").astype(int)
 
     return df_clean
 
-    df_clean = clean_diabetes_data(df)
+def plot_and_save_metrics(model_name, y_test, y_prob, threshold=0.5):
+    """
+    Make ROC, PR, and confusion matrix plots for one model
+    and save them under figures/.
+    """
+    os.makedirs("figures", exist_ok=True)
 
-    df_clean.head()
+    FONT_LABEL = 14
+    FONT_TITLE = 16
+    FONT_TICKS = 13
+    FONT_LEGEND = 13
+    LINE_WIDTH_MAIN = 4
+    LINE_WIDTH_BASE = 3
+
+    # Binary predictions at chosen threshold
+    y_pred = (y_prob >= threshold).astype(int)
+
+    #ROC curve 
+    fpr, tpr, _ = roc_curve(y_test, y_prob)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure()
+    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}", lw=LINE_WIDTH_MAIN)
+    plt.plot([0, 1], [0, 1], "k--", lw=LINE_WIDTH_BASE)
+    plt.xlabel("False Positive Rate", fontsize=FONT_LABEL)
+    plt.ylabel("True Positive Rate", fontsize=FONT_LABEL)
+    plt.title(f"{model_name} – ROC curve", fontsize=FONT_TITLE)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    plt.legend(loc="lower right", fontsize=FONT_LEGEND)
+    plt.tight_layout()
+    plt.savefig(f"figures/roc_{model_name}.png", dpi=300)
+    plt.close()
+
+    #Precision–Recall curve
+    precision, recall, _ = precision_recall_curve(y_test, y_prob)
+    ap = average_precision_score(y_test, y_prob)
+
+    plt.figure()
+    plt.plot(recall, precision, label=f"AP = {ap:.3f}", linewidth=LINE_WIDTH_MAIN)
+    plt.xlabel("Recall", fontsize=FONT_LABEL)
+    plt.ylabel("Precision", fontsize=FONT_LABEL)
+    plt.title(f"{model_name} – Precision–Recall curve", fontsize=FONT_TITLE)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    plt.legend(loc="lower left", fontsize=FONT_LEGEND)
+    plt.tight_layout()
+    plt.savefig(f"figures/pr_{model_name}.png", dpi=300)
+    plt.close()
+
+    #Confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+    disp = ConfusionMatrixDisplay(cm, display_labels=["No 30d readmit", "30d readmit"])
+    disp.plot(values_format="d")
+    plt.title(f"{model_name} – Confusion matrix (thr={threshold})", fontsize=FONT_TITLE)
+    plt.xticks(fontsize=FONT_TICKS)
+    plt.yticks(fontsize=FONT_TICKS)
+    
+    # Increase font size of the cell values
+    for text in plt.gca().texts:
+        text.set_fontsize(14)
+        
+    plt.tight_layout()
+    plt.savefig(f"figures/cm_{model_name}.png", dpi=300)
+    plt.close()
