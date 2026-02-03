@@ -338,14 +338,14 @@ COMP-9170-Final-Project/
 │   └── diabetes_utils.py
 ├── oof_predictions/
 ├── figures/
-│
-├── 01_lace.ipynb
-├── 02_xgboost.ipynb
-├── 03_lstm.ipynb
-├── 04_tabnet.ipynb
-├── 05_tarnn.ipynb
-├── 06_stacking.ipynb
-├── 07_evaluation.ipynb
+├── models/
+│   └── 01_lace.ipynb
+│   └── 02_xgboost.ipynb
+│   └── 03_lstm.ipynb
+│   └── 04_tabnet.ipynb
+│   └── 05_tarnn.ipynb
+│   └── 06_stacking.ipynb
+│   └── 07_evaluation.ipynb
 └── README.md
 ```
 
